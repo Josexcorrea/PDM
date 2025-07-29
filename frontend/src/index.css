@@ -1,0 +1,33 @@
+/* Import Tailwind CSS base styles - resets and default styles */
+@tailwind base;
+/* Import Tailwind CSS component classes - reusable component styles */
+@tailwind components;
+/* Import Tailwind CSS utility classes - low-level utility classes */
+@tailwind utilities;
+
+/* Custom scrollbar styling - Tailwind doesn't have built-in scrollbar utilities */
+/* ::-webkit-scrollbar - targets the main scrollbar element */
+::-webkit-scrollbar {
+  /* width: 8px - makes the scrollbar 8 pixels wide */
+  width: 8px;
+}
+
+/* ::-webkit-scrollbar-track - targets the background track of the scrollbar */
+::-webkit-scrollbar-track {
+  /* background: #1f2937 - makes the scrollbar track dark gray */
+  background: #1f2937;
+}
+
+/* ::-webkit-scrollbar-thumb - targets the draggable part of the scrollbar */
+::-webkit-scrollbar-thumb {
+  /* background: #3b82f6 - makes the scrollbar thumb blue */
+  background: #3b82f6;
+  /* border-radius: 4px - rounds the corners of the scrollbar thumb */
+  border-radius: 4px;
+}
+
+/* ::-webkit-scrollbar-thumb:hover - targets the scrollbar thumb when mouse is over it */
+::-webkit-scrollbar-thumb:hover {
+  /* background: #60a5fa - makes the scrollbar thumb lighter blue when hovered */
+  background: #60a5fa;
+}
