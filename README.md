@@ -93,9 +93,8 @@ pdm/
 
 1. Keep frontend and backend code in their respective directories
 2. Use TypeScript for frontend code
-3. Follow React and Rust best practices
-4. Use Tailwind for styling
-5. Add proper type definitions for shared interfaces
+3. Use Tailwind for styling
+4. Add proper type definitions for shared interfaces
 
 ## Production Build
 
