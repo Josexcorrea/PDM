@@ -1,56 +1,55 @@
-/**
- * PDM Backend Server
- * 
- * This is the main entry point for the PDM backend server.
- * It handles hardware communication and provides APIs for the frontend.
- * 
- * Architecture:
- * - HTTP API server for frontend communication
- * - Hardware abstraction layer for PDM communication
- * - Real-time channel monitoring and control
- * - Safety systems and fault detection
- */
 
+// Import error handling type from anyhow crate
 use anyhow::Result;
+// Import logging macros from tracing crate
 use tracing::{info, error};
+// Import thread-safe reference counting pointer
 use std::sync::Arc;
+// Import async read/write lock for shared state
 use tokio::sync::RwLock;
 
-// Import our modules
+// Declare submodules for API, hardware, models, and config
 mod api;
 mod hardware;
 mod models;
 mod config;
 
+// Import PdmState struct from models module
 use models::PdmState;
+// Import HardwareManager struct from hardware module
 use hardware::HardwareManager;
+// Import create_router function from api module
 use api::create_router;
 
-// Main entry point - sets up and runs the backend server
-#[tokio::main]
-async fn main() -> Result<()> {
-    // Initialize logging
+// Main async entry point for the backend server
+#[tokio::main] // Macro to use Tokio runtime for async main
+async fn main() -> Result<()> { // Main function, returns Result for error handling
+    // Initialize logging system
     tracing_subscriber::fmt::init();
     
-    info!("🚀 PDM Backend Server starting...");
+    // Log server startup
+    info!("PDM Backend Server starting...");
     
-    // Load configuration
+    // Load configuration from file or environment
     let config = config::Config::load()?;
-    info!("📋 Configuration loaded: listening on {}", config.server_address);
+    // Log loaded configuration
+    info!("Configuration loaded: listening on {}", config.server_address);
     
-    // Initialize shared PDM state
+    // Create shared, thread-safe PdmState
     let pdm_state = Arc::new(RwLock::new(PdmState::new()));
     
-    // Initialize hardware manager
+    // Create shared, thread-safe HardwareManager
     let hardware_manager = Arc::new(HardwareManager::new(config.clone())?);
     
-    // Start hardware monitoring task
+    // Start hardware monitoring in a background task
     let hardware_task = {
-        let pdm_state = Arc::clone(&pdm_state);
-        let hardware_manager = Arc::clone(&hardware_manager);
+        let pdm_state = Arc::clone(&pdm_state); // Clone Arc for task
+        let hardware_manager = Arc::clone(&hardware_manager); // Clone Arc for task
         
+        // Spawn async task for hardware monitoring
         tokio::spawn(async move {
             if let Err(e) = hardware_manager.start_monitoring(pdm_state).await {
+                // Log error if monitoring fails
                 error!("Hardware monitoring failed: {}", e);
             }
         })
@@ -59,31 +58,38 @@ async fn main() -> Result<()> {
     // Create API router with shared state
     let app = create_router(pdm_state, hardware_manager);
     
-    // Start the HTTP server
+    // Bind TCP listener to server address
     let listener = tokio::net::TcpListener::bind(&config.server_address).await?;
-    info!("🌐 PDM API server listening on {}", config.server_address);
-    info!("✅ Backend ready for frontend connections");
+    // Log API server address
+    info!("PDM API server listening on {}", config.server_address);
+    // Log backend readiness
+    info!("Backend ready for frontend connections");
     
-    // Run the server
+    // Start HTTP server in a background task
     let server_task = tokio::spawn(async move {
         if let Err(e) = axum::serve(listener, app).await {
+            // Log error if server fails
             error!("Server error: {}", e);
         }
     });
     
-    // Wait for either task to complete (or fail)
+    // Wait for hardware or server task to finish, or for shutdown signal
     tokio::select! {
         _ = hardware_task => {
+            // Log if hardware task ends unexpectedly
             error!("Hardware monitoring task ended unexpectedly");
         }
         _ = server_task => {
+            // Log if server task ends unexpectedly
             error!("Server task ended unexpectedly");
         }
         _ = tokio::signal::ctrl_c() => {
-            info!("🛑 Shutdown signal received");
+            // Log shutdown signal
+            info!("Shutdown signal received");
         }
     }
     
-    info!("👋 PDM Backend Server shutting down");
-    Ok(())
+    // Log server shutdown
+    info!("PDM Backend Server shutting down");
+    Ok(()) // Return success
 }

@@ -8,36 +8,22 @@ authors = ["Your Name <your.email@example.com>"]
 
 # Dependencies - external libraries this project needs
 [dependencies]
-# Core async runtime for handling multiple connections
 tokio = { version = "1.0", features = ["full"] }
-
-# Serialization for data exchange with frontend
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
-# Hardware communication
-serialport = "4.0"  # For USB/serial communication
-socketcan = "3.0"   # For CAN bus communication (Linux/embedded)
-
-# HTTP server for frontend communication
+serialport = "4.0"
+socketcan = "3.0"
 axum = "0.7"
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors"] }
-
-# Logging and error handling
 tracing = "0.1"
 tracing-subscriber = "0.3"
 anyhow = "1.0"
 thiserror = "1.0"
-
-# Time utilities
 chrono = { version = "0.4", features = ["serde"] }
-
-# Configuration management
 toml = "0.8"
-
-# Random number generation for simulation
 rand = "0.8"
+memcache = "0.16" # Memcached client for Rust
 
 # Binary configuration - tells Cargo how to build the executable
 [[bin]]

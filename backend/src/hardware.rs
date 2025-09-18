@@ -1,13 +1,3 @@
-/**
- * Hardware Communication Manager
- * 
- * This module handles all communication with the PDM hardware:
- * - USB/Serial communication
- * - CAN bus communication
- * - Hardware simulation for development
- * - Real-time monitoring and control
- */
-
 use anyhow::{Result, anyhow};
 use tokio::sync::RwLock;
 use tokio::time::{interval, Duration};
@@ -16,6 +6,7 @@ use std::sync::Arc;
 
 use crate::config::Config;
 use crate::models::{PdmState, HardwareMessage, HardwareResponse, ChannelStatus, SystemStatus};
+use memcache;
 
 /// Hardware manager handles all PDM hardware communication
 pub struct HardwareManager {
@@ -29,9 +20,9 @@ impl HardwareManager {
         let simulation_mode = config.hardware.simulation_mode;
         
         if simulation_mode {
-            info!("🔧 Hardware manager initialized in SIMULATION mode");
+            info!("Hardware manager initialized in SIMULATION mode");
         } else {
-            info!("🔧 Hardware manager initialized for REAL hardware");
+            info!("Hardware manager initialized for REAL hardware");
             // TODO: Initialize actual hardware connections here
         }
         
@@ -43,7 +34,7 @@ impl HardwareManager {
     
     /// Start the hardware monitoring loop
     pub async fn start_monitoring(&self, pdm_state: Arc<RwLock<PdmState>>) -> Result<()> {
-        info!("📡 Starting hardware monitoring loop");
+    info!("Starting hardware monitoring loop");
         
         let mut status_interval = interval(Duration::from_millis(
             self.config.hardware.status_update_interval_ms
@@ -90,7 +81,7 @@ impl HardwareManager {
     /// Control a specific channel (turn on/off, set limits)
     pub async fn control_channel(&self, channel: u8, enable: bool) -> Result<()> {
         if self.simulation_mode {
-            info!("🔄 [SIM] Channel {} -> {}", channel, if enable { "ON" } else { "OFF" });
+            info!("[SIM] Channel {} -> {}", channel, if enable { "ON" } else { "OFF" });
             // In simulation, just log the action
             Ok(())
         } else {
@@ -101,7 +92,7 @@ impl HardwareManager {
     /// Emergency shutdown all channels
     pub async fn emergency_shutdown(&self) -> Result<()> {
         if self.simulation_mode {
-            warn!("🚨 [SIM] EMERGENCY SHUTDOWN - All channels OFF");
+            warn!("[SIM] EMERGENCY SHUTDOWN - All channels OFF");
             Ok(())
         } else {
             self.send_real_emergency_shutdown().await
@@ -226,3 +217,16 @@ impl HardwareManager {
 
 // Add rand dependency for simulation
 use rand;
+
+pub fn test_memcached() -> anyhow::Result<()> {
+    // Connect to local Memcached server
+    let client = memcache::Client::connect("memcache://localhost:11211")?;
+    // Set a value
+    client.set("test_key", "hello world", 60)?; // expires in 60 seconds
+    // Get the value
+    let value: Option<String> = client.get("test_key")?;
+    println!("Memcached test value: {:?}", value);
+    // Delete the value
+    client.delete("test_key")?;
+    Ok(())
+}
