@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n sim,api,vite,electron -c blue,green,magenta,yellow \"npm:dev:sim\" \"npm:dev:api\" \"npm:dev:vite\" \"npm:dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && electron electron/main.js",
+    "dev:sim": "powershell -NoProfile -Command \"cd ..\\backend\\firmware; $env:SIM_PORT='COM10'; $env:SIM_BAUD='115200'; python .\\stm32_sim.py\"",
+    "dev:api": "powershell -NoProfile -Command \"cd ..\\backend\\firmware; $env:READER_PORT='COM11'; $env:READER_BAUD='115200'; $env:PDM_MOCK='1'; python .\\usb_reader.py\"",
+    
     "build": "vite build",
     "preview": "vite preview",
     "start": "electron electron/main.js"
@@ -18,8 +23,11 @@
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.21",
     "electron": "^37.2.4",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.0",
+    "daisyui": "^4.12.10",
     "vite": "^5.2.0"
   }
 }
