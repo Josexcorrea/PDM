@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { pdmApi, TestScenario, Channel } from "./api/client";
+import { pdmApi, Channel } from "./api/client";
 
 export default function App() {
   // Theme
@@ -25,16 +25,6 @@ export default function App() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [visibleChannelIds, setVisibleChannelIds] = useState<number[]>([]);
   const [systemStatus, setSystemStatus] = useState("Normal");
-
-  // Test cases
-  const [isTestMode, setIsTestMode] = useState(false);
-  const [testScenario, setTestScenario] = useState<TestScenario>({
-    name: "",
-    description: "",
-    elapsed: 0,
-    status: "idle",
-    current_event: "",
-  });
 
   // Clock
   useEffect(() => {
@@ -68,24 +58,6 @@ export default function App() {
       clearInterval(id);
     };
   }, []);
-
-  // Poll test scenario when test mode is on
-  useEffect(() => {
-    if (!isTestMode) return;
-    let mounted = true;
-    const tick = async () => {
-      try {
-        const scen = await pdmApi.getTestScenario();
-        if (mounted) setTestScenario(scen);
-      } catch {}
-    };
-    tick();
-    const id = setInterval(tick, 500);
-    return () => {
-      mounted = false;
-      clearInterval(id);
-    };
-  }, [isTestMode]);
 
   // Handlers
   const toggleChannel = async (channelNumber: number) => {
@@ -138,23 +110,6 @@ export default function App() {
 
   const handleSaveConfig = () => {
     setLastSaved(new Date());
-  };
-
-  const handleTestMode = () => {
-    setIsTestMode((v) => !v);
-    // Always reset the scenario when toggling test mode (opening or closing)
-    setTestScenario({ name: "", description: "", elapsed: 0, status: "idle", current_event: "" });
-  };
-
-  const triggerScenario = async (id: number) => {
-    try {
-      await pdmApi.triggerScenario(id);
-      // Poll immediately to pick up the active scenario
-      const scen = await pdmApi.getTestScenario();
-      setTestScenario(scen);
-    } catch (e) {
-      console.error("Failed to trigger scenario", e);
-    }
   };
 
   const addChannel = (channelId: number) => {
@@ -446,12 +401,6 @@ export default function App() {
               {lastSaved && (
                 <div className="text-xs text-base-content/60 text-center">Last saved: {lastSaved.toLocaleTimeString()}</div>
               )}
-              <button
-                onClick={handleTestMode}
-                className={`btn btn-block ${isTestMode ? 'btn-error' : 'btn-warning'}`}
-              >
-                {isTestMode ? 'CLOSE TEST CASES' : 'TEST CASES'}
-              </button>
             </div>
           </div>
           
@@ -486,70 +435,6 @@ export default function App() {
           </div>
         </div>
       </main>
-      
-      {/* Test Cases Panel - Bottom Right (shown when Test Cases toggled) */}
-      {isTestMode && (
-      <div className="fixed bottom-6 right-6 w-96 bg-base-200 border border-base-300 rounded-lg shadow-xl p-5 text-base-content">
-        <div className="border-b border-base-300 pb-3 mb-4">
-          <h3 className="text-xl font-bold text-primary">Test Cases</h3>
-          <p className="text-xs text-base-content/70 mt-1">Simulate real-world race conditions</p>
-        </div>
-        
-        {testScenario.status === 'idle' ? (
-          // Idle state - show scenario buttons
-          <div className="space-y-3">
-            <p className="text-sm text-base-content/80 font-medium mb-3">Select a scenario:</p>
-            <button
-              onClick={() => triggerScenario(1)}
-              className="btn btn-secondary btn-block"
-            >
-              Cooling Fan Failure
-            </button>
-            <button
-              onClick={() => triggerScenario(2)}
-              className="btn btn-secondary btn-block"
-            >
-              Engine Start Sequence
-            </button>
-            <div className="mt-4 pt-3 border-t border-base-300">
-              <div className="flex items-center text-sm text-success">
-                <div className="w-2 h-2 bg-success rounded-full mr-2"></div>
-                <span className="font-medium">Status: Ready</span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          // Active state - show scenario running
-          <div className="space-y-3">
-            <div className="bg-base-300 border-l-4 border-accent p-3 rounded">
-              <h4 className="font-bold text-accent text-lg">{testScenario.name}</h4>
-              <p className="text-sm text-base-content/70 mt-1">{testScenario.description}</p>
-            </div>
-            
-            <div className="bg-base-300 rounded-lg p-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-base-content/80">Time Elapsed:</span>
-                <span className="text-lg font-bold text-accent">{testScenario.elapsed.toFixed(1)}s</span>
-              </div>
-            </div>
-            
-            <div className="bg-base-300 rounded-lg p-3 max-h-48 overflow-y-auto">
-              <h5 className="text-xs font-bold text-base-content/80 mb-2 uppercase">Event Log:</h5>
-              <div className="space-y-1 text-xs font-mono">
-                <div className="text-accent border-l-2 border-accent pl-2 py-1">
-                  {testScenario.current_event}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center text-sm text-accent bg-base-300 p-2 rounded">
-              <div className="w-2 h-2 bg-accent rounded-full mr-2 animate-pulse"></div>
-              <span className="font-medium">Status: Active</span>
-            </div>
-          </div>
-        )}
-      </div>
-      )}
     </div>
   );
 }

@@ -37,14 +37,6 @@ export interface HealthResponse {
   timestamp: string;
 }
 
-export interface TestScenario {
-  name: string;
-  description: string;
-  elapsed: number;
-  status: 'idle' | 'active' | 'complete';
-  current_event: string;
-}
-
 // API Client
 export class PdmApiClient {
   private baseUrl: string;
@@ -114,25 +106,6 @@ export class PdmApiClient {
   async resetAll(): Promise<string> {
     console.warn('Reset not implemented in Python backend yet');
     return 'Reset not available';
-  }
-
-  // Test scenario controls
-  async triggerScenario(scenarioId: number): Promise<{ status: string; scenario_id: number }> {
-    const response = await fetch(`${this.baseUrl}/api/pdm/trigger-scenario`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ scenario_id: scenarioId }),
-    });
-    if (!response.ok) throw new Error('Failed to trigger scenario');
-    return response.json();
-  }
-
-  async getTestScenario(): Promise<TestScenario> {
-    const response = await fetch(`${this.baseUrl}/api/pdm/test-scenario`);
-    if (!response.ok) throw new Error('Failed to get test scenario');
-    return response.json();
   }
 }
 

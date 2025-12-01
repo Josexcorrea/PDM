@@ -1,59 +1,72 @@
- # PDM - Power Distribution Module
- 
- Desktop application for monitoring a Power Distribution Module (PDM) in an FSAE race car.
- 
- - Simulator: Python script generates 8‑channel telemetry over a virtual COM port
- - Backend API: Python Flask parses binary packets and serves REST endpoints
- - Frontend: Electron + React (Vite + Tailwind) dashboard UI
- - Rust: Placeholder for a future backend implementation
- 
+# PDM - Power Distribution Module
+
+Desktop application for monitoring a Power Distribution Module (PDM) in an FSAE race car.
+
+- Backend API: Python Flask reads USB serial data and serves REST endpoints
+- Frontend: Electron + React (Vite + Tailwind) dashboard UI
+- Hardware: STM32 microcontroller connected via USB
+
 ## Frontend theme
 - The UI uses Tailwind CSS + DaisyUI with a custom FIU theme.
 - Themes: `fiu` (light) and `fiu-dark` (dark, default). You can still switch to stock themes if desired.
 - Use the header toggle to switch between FIU Light/Dark. Preference is saved to localStorage.
 
- ## Requirements
- - Windows (tested) with a virtual COM pair (e.g., COM10 <-> COM11 via com0com)
- - Python 3.8+
- - Node.js 18+
- 
- ## Quick start
- One command to run the entire stack (simulator + API + UI):
- 
- 1) Install dependencies
- 
- ```powershell
- cd "backend/firmware"
- pip install -r requirements.txt
- 
- cd "../../frontend"
- npm install
- ```
- 
- 2) Run app (all services):
- 
- ```powershell
- cd "frontend"
- npm run dev
- # Starts simulator (COM10), API (http://localhost:5000), Vite (5173), Electron
- ```
- 
- ## REST API (selected)
- - GET /api/health — Health check
- - GET /api/pdm/status — Full system snapshot (voltage, total current, 8 channels)
- - GET /api/pdm/system — System summary
- - POST /api/pdm/trigger-scenario — Body: { "scenario_id": 1|2 }
- - GET /api/pdm/test-scenario — Current scenario status
- 
- ## Simulator details
- - Port: COM10 (configurable via SIM_PORT env var)
- - Packet: 58 bytes — 1 header (0xAA) + 8 channels x 7 bytes + 1 checksum (XOR)
- - Channel: 7 bytes = voltage mV (u16) + current mA (u16) + temp 0.1°C (i16) + status flags (u8)
- - Scenarios: Cooling Fan Failure (1), Engine Start Sequence (2)
- - Trigger file: backend/firmware/scenario_trigger.json (written by API)
- - Status file: backend/firmware/scenario_status.json (read by API)
- 
- ## Project structure
+## Requirements
+- Windows/Linux/Mac
+- Python 3.8+
+- Node.js 18+
+- STM32 hardware connected via USB
+
+## Quick start
+
+1) Install dependencies
+
+```powershell
+cd "backend/firmware"
+pip install -r requirements.txt
+
+cd "../../frontend"
+npm install
+```
+
+2) Configure COM port (if not auto-detected):
+
+```powershell
+# Set environment variable (Windows)
+$env:READER_PORT="COM3"  # Replace with your STM32's COM port
+
+# Or edit usb_reader.py directly, line 25
+```
+
+3) Run backend API:
+
+```powershell
+cd "backend/firmware"
+python usb_reader.py
+# Starts Flask API on http://localhost:5000
+```
+
+4) Run frontend (in new terminal):
+
+```powershell
+cd "frontend"
+npm run dev
+# Starts Vite dev server and Electron app
+```
+
+## REST API Endpoints
+- GET /api/health — Health check
+- GET /api/pdm/status — Full system snapshot (voltage, total current, 8 channels)
+- GET /api/pdm/channels — All channel data
+- GET /api/pdm/channel/<id> — Specific channel data
+- GET /api/pdm/system — System summary (voltage, current, active channels)
+- POST /api/pdm/channel/<id>/set — Enable/disable channel (body: {"enabled": true/false})
+
+## Binary Protocol
+- Packet: 58 bytes — 1 header (0xAA) + 8 channels × 7 bytes + 1 checksum (XOR)
+- Channel: 7 bytes = voltage mV (u16) + current mA (u16) + temp 0.1°C (i16) + status flags (u8)
+
+## Project structure
  ```
  PDM/
    backend/

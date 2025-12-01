@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n sim,api,vite,electron -c blue,green,magenta,yellow \"npm:dev:sim\" \"npm:dev:api\" \"npm:dev:vite\" \"npm:dev:electron\"",
+    "dev": "concurrently -n vite,electron -c magenta,yellow \"npm:dev:vite\" \"npm:dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:5173 && electron electron/main.js",
-    "dev:sim": "powershell -NoProfile -Command \"cd ..\\backend\\firmware; $env:SIM_PORT='COM10'; $env:SIM_BAUD='115200'; python .\\stm32_sim.py\"",
-    "dev:api": "powershell -NoProfile -Command \"cd ..\\backend\\firmware; $env:READER_PORT='COM11'; $env:READER_BAUD='115200'; $env:PDM_MOCK='1'; python .\\usb_reader.py\"",
+    "dev:api": "powershell -NoProfile -Command \"cd ..\\backend\\firmware; python .\\usb_reader.py\"",
     
     "build": "vite build",
     "preview": "vite preview",
