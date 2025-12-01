@@ -23,6 +23,7 @@ export default function App() {
   const [systemVoltage, setSystemVoltage] = useState(0);
   const [totalCurrent, setTotalCurrent] = useState(0);
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [visibleChannelIds, setVisibleChannelIds] = useState<number[]>([]);
   const [systemStatus, setSystemStatus] = useState("Normal");
 
   // Test cases
@@ -141,9 +142,8 @@ export default function App() {
 
   const handleTestMode = () => {
     setIsTestMode((v) => !v);
-    if (isTestMode) {
-      setTestScenario({ name: "", description: "", elapsed: 0, status: "idle", current_event: "" });
-    }
+    // Always reset the scenario when toggling test mode (opening or closing)
+    setTestScenario({ name: "", description: "", elapsed: 0, status: "idle", current_event: "" });
   };
 
   const triggerScenario = async (id: number) => {
@@ -156,6 +156,19 @@ export default function App() {
       console.error("Failed to trigger scenario", e);
     }
   };
+
+  const addChannel = (channelId: number) => {
+    if (!visibleChannelIds.includes(channelId)) {
+      setVisibleChannelIds([...visibleChannelIds, channelId]);
+    }
+  };
+
+  const removeChannel = (channelId: number) => {
+    setVisibleChannelIds(visibleChannelIds.filter(id => id !== channelId));
+  };
+
+  // Get available channels that aren't already visible
+  const availableChannels = channels.filter(ch => !visibleChannelIds.includes(ch.id));
 
   // Derived
   const totalPower = Math.round(systemVoltage * totalCurrent);
@@ -215,34 +228,86 @@ export default function App() {
               <div className="w-2 h-2 bg-secondary rounded-full mr-2 animate-pulse"></div>
               Output Channels
             </h2>
+            
+            {/* Add Channel Selector */}
+            <div className="mb-3 space-y-2">
+              <select
+                className="select select-primary select-sm w-full"
+                value=""
+                onChange={(e) => {
+                  const channelId = parseInt(e.target.value);
+                  if (!isNaN(channelId)) {
+                    addChannel(channelId);
+                    e.target.value = ""; // Reset select
+                  }
+                }}
+                disabled={availableChannels.length === 0}
+              >
+                <option value="" disabled>
+                  {availableChannels.length > 0 
+                    ? `Select Channel to Add (${visibleChannelIds.length}/${channels.length})`
+                    : `All Channels Added (${channels.length}/${channels.length})`
+                  }
+                </option>
+                {availableChannels.map((ch) => (
+                  <option key={ch.id} value={ch.id}>
+                    {ch.name} (Ch {ch.id + 1})
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             <div className="space-y-2">
-              {channels.map((channel) => {
+              {channels
+                .filter(channel => visibleChannelIds.includes(channel.id))
+                .map((channel) => {
                 const isOn = channel.status?.on || false;
                 const hasFault = Boolean(channel.status?.fault || channel.status?.over_current || channel.status?.over_temp);
                 return (
                   <div
                     key={channel.id}
-                    onClick={() => toggleChannel(channel.id + 1)}
-                    className={`flex items-center justify-between bg-base-300 p-3 rounded-lg border-l-4 transition-all hover:bg-base-300/80 cursor-pointer ${hasFault ? 'border-error' : isOn ? 'border-success' : 'border-base-300'}`}
-                    title={`Click to ${isOn ? 'turn OFF' : 'turn ON'} ${channel.name}`}
+                    className={`relative bg-base-300 p-3 rounded-lg border-l-4 transition-all ${hasFault ? 'border-error' : isOn ? 'border-success' : 'border-base-300'}`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-2.5 h-2.5 rounded-full ${isOn ? (hasFault ? 'bg-error' : 'bg-success') : 'bg-base-300'}`}></div>
-                      <div className="text-center">
-                        <div className="text-base-content text-xs font-bold uppercase">{channel.name}</div>
+                    {/* Remove button */}
+                    <button
+                      onClick={() => removeChannel(channel.id)}
+                      className="absolute top-1 left-1 btn btn-ghost btn-xs text-error"
+                      title="Remove channel from view"
+                    >
+                      ✕
+                    </button>
+                    
+                    {/* Channel content - clickable to toggle */}
+                    <div
+                      onClick={() => toggleChannel(channel.id + 1)}
+                      className="flex items-center justify-between cursor-pointer hover:opacity-80"
+                      title={`Click to ${isOn ? 'turn OFF' : 'turn ON'} ${channel.name}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-2.5 h-2.5 rounded-full ${isOn ? (hasFault ? 'bg-error' : 'bg-success') : 'bg-base-300'}`}></div>
+                        <div className="text-center">
+                          <div className="text-base-content text-xs font-bold uppercase">{channel.name}</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-xl font-bold font-mono ${hasFault ? 'text-error' : isOn ? 'text-success' : 'text-base-content/50'}`}>{channel.current.toFixed(1)}A</div>
-                      <div className="text-base-content/60 text-[10px] font-mono">{channel.voltage.toFixed(1)}V</div>
-                      <div className="mt-0.5 space-x-1">
-                        {isOn ? (<span className="badge badge-success badge-xs text-[9px] py-0">ON</span>) : (<span className="badge badge-ghost badge-xs text-[9px] py-0">OFF</span>)}
-                        {hasFault && <span className="badge badge-error badge-xs text-[9px] py-0">FAULT</span>}
+                      <div className="text-right">
+                        <div className={`text-xl font-bold font-mono ${hasFault ? 'text-error' : isOn ? 'text-success' : 'text-base-content/50'}`}>{channel.current.toFixed(1)}A</div>
+                        <div className="text-base-content/60 text-[10px] font-mono">{channel.voltage.toFixed(1)}V</div>
+                        <div className="mt-0.5 space-x-1">
+                          {isOn ? (<span className="badge badge-success badge-xs text-[9px] py-0">ON</span>) : (<span className="badge badge-ghost badge-xs text-[9px] py-0">OFF</span>)}
+                          {hasFault && <span className="badge badge-error badge-xs text-[9px] py-0">FAULT</span>}
+                        </div>
                       </div>
                     </div>
                   </div>
                 );
               })}
+              
+              {visibleChannelIds.length === 0 && (
+                <div className="text-center text-base-content/60 text-sm py-8">
+                  No channels added yet.<br />
+                  Select a channel above to start monitoring.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -453,41 +518,33 @@ export default function App() {
               </div>
             </div>
           </div>
-        ) : testScenario.status === 'active' ? (
+        ) : (
           // Active state - show scenario running
           <div className="space-y-3">
-            <div className="bg-base-300 border-l-4 border-secondary p-3 rounded">
-              <h4 className="font-bold text-secondary text-lg">{testScenario.name}</h4>
+            <div className="bg-base-300 border-l-4 border-accent p-3 rounded">
+              <h4 className="font-bold text-accent text-lg">{testScenario.name}</h4>
               <p className="text-sm text-base-content/70 mt-1">{testScenario.description}</p>
             </div>
             
             <div className="bg-base-300 rounded-lg p-3">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-base-content/80">Time Elapsed:</span>
-                <span className="text-lg font-bold text-secondary">{testScenario.elapsed.toFixed(1)}s</span>
+                <span className="text-lg font-bold text-accent">{testScenario.elapsed.toFixed(1)}s</span>
               </div>
             </div>
             
             <div className="bg-base-300 rounded-lg p-3 max-h-48 overflow-y-auto">
               <h5 className="text-xs font-bold text-base-content/80 mb-2 uppercase">Event Log:</h5>
               <div className="space-y-1 text-xs font-mono">
-                <div className="text-secondary border-l-2 border-secondary pl-2 py-1">
+                <div className="text-accent border-l-2 border-accent pl-2 py-1">
                   {testScenario.current_event}
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center text-sm text-secondary bg-base-300 p-2 rounded">
-              <div className="w-2 h-2 bg-secondary rounded-full mr-2 animate-pulse"></div>
+            <div className="flex items-center text-sm text-accent bg-base-300 p-2 rounded">
+              <div className="w-2 h-2 bg-accent rounded-full mr-2 animate-pulse"></div>
               <span className="font-medium">Status: Active</span>
-            </div>
-          </div>
-        ) : (
-          // Complete state
-          <div className="space-y-3">
-            <div className="bg-base-300 border-l-4 border-success p-3 rounded">
-              <h4 className="font-bold text-success text-lg">✅ Scenario Complete</h4>
-              <p className="text-sm text-base-content/70 mt-1">Returning to normal mode...</p>
             </div>
           </div>
         )}
