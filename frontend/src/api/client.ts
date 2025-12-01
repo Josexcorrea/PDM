@@ -69,7 +69,11 @@ export class PdmApiClient {
 
   // Get specific channel
   async getChannel(channelId: number): Promise<Channel> {
-    const response = await fetch(`${this.baseUrl}/api/pdm/channel/${channelId}`);
+    const response = await fetch(`${this.baseUrl}/api/pdm/channel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelId }),
+    });
     if (!response.ok) throw new Error('Failed to get channel');
     const data = await response.json();
     return data.channel;
@@ -95,6 +99,47 @@ export class PdmApiClient {
       body: JSON.stringify({ enabled }),
     });
     if (!response.ok) throw new Error('Failed to set channel state');
+    return response.json();
+  }
+
+  // Additional control endpoints from new backend
+  async addChannel(device: string): Promise<{ status: string; message: string }> {
+    const response = await fetch(`${this.baseUrl}/add_channel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device }),
+    });
+    if (!response.ok) throw new Error('Failed to add channel');
+    return response.json();
+  }
+
+  async setChannel(device: string, channel: number, status: boolean): Promise<{ status: string; message: string }> {
+    const response = await fetch(`${this.baseUrl}/set_channel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device, channel, status }),
+    });
+    if (!response.ok) throw new Error('Failed to set channel');
+    return response.json();
+  }
+
+  async getParam(device: string, channel: number): Promise<{ status: string; response: any }> {
+    const response = await fetch(`${this.baseUrl}/get_param`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device, channel }),
+    });
+    if (!response.ok) throw new Error('Failed to get parameters');
+    return response.json();
+  }
+
+  async setCurrent(device: string, channel: number, current: number): Promise<{ status: string; message: string }> {
+    const response = await fetch(`${this.baseUrl}/set_current`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device, channel, current }),
+    });
+    if (!response.ok) throw new Error('Failed to set current');
     return response.json();
   }
 
