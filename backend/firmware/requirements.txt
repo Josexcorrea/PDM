@@ -1,0 +1,11 @@
+# Python dependencies for PDM Backend Firmware
+
+# Serial communication (USB/COM port)
+pyserial==3.5
+
+# REST API server
+Flask==3.0.0
+flask-cors==4.0.0
+
+# Optional: For better development experience
+python-dotenv==1.0.0
